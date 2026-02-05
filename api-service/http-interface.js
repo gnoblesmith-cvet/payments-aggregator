@@ -26,6 +26,25 @@ class HttpInterface {
         checkedAt: new Date().toISOString() 
       });
     });
+
+    // Stripe-specific endpoints for cached data
+    this.expressApp.get('/stripe/payment-links', (req, res) => {
+      const stripePoller = this.engine.getStripePoller();
+      const paymentLinks = stripePoller.getPaymentLinks();
+      res.json({
+        count: paymentLinks.length,
+        data: paymentLinks
+      });
+    });
+
+    this.expressApp.get('/stripe/transactions', (req, res) => {
+      const stripePoller = this.engine.getStripePoller();
+      const transactions = stripePoller.getTransactions();
+      res.json({
+        count: transactions.length,
+        data: transactions
+      });
+    });
   }
 
   activate(portNum) {
