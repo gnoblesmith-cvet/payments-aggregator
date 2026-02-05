@@ -1,8 +1,19 @@
+const StripePoller = require('./stripe-poller');
+
 class TransactionEngine {
   constructor() {
     this.dataStore = { worldpay: [], stripe: [] };
     this.listeners = [];
     this.generatorTimer = null;
+    
+    // Initialize Stripe poller for real API integration
+    this.stripePoller = new StripePoller();
+    
+    // Forward Stripe transactions to our listeners
+    this.stripePoller.onNewTransaction((txData) => {
+      this.dataStore.stripe.push(txData);
+      this.listeners.forEach(fn => fn(txData));
+    });
   }
 
   onNewTransaction(callbackFn) {
@@ -10,6 +21,10 @@ class TransactionEngine {
   }
 
   beginGenerating() {
+    // Start Stripe polling for real API integration
+    this.stripePoller.startPolling();
+    
+    // Continue generating simulated Worldpay transactions only
     this.generatorTimer = setInterval(() => {
       const tx = this._fabricateTransaction();
       this.dataStore[tx.processorName].push(tx);
@@ -18,8 +33,8 @@ class TransactionEngine {
   }
 
   _fabricateTransaction() {
-    const processors = ['worldpay', 'stripe'];
-    const chosenProcessor = processors[Math.floor(Math.random() * processors.length)];
+    // Only generate Worldpay transactions now (Stripe uses real API)
+    const chosenProcessor = 'worldpay';
     const moneyValue = (Math.random() * 880 + 70).toFixed(2);
     const outcomes = ['success', 'processing', 'declined'];
     const outcomeProbs = [0.82, 0.12, 0.06];
@@ -78,6 +93,13 @@ class TransactionEngine {
       });
     }
     return points;
+  }
+
+  /**
+   * Get the StripePoller instance for direct access to Stripe data
+   */
+  getStripePoller() {
+    return this.stripePoller;
   }
 }
 
