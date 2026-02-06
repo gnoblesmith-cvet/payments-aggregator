@@ -61,16 +61,55 @@ class TransactionEngine {
     for (let i = 23; i >= 0; i--) {
       const timePoint = new Date();
       timePoint.setHours(timePoint.getHours() - i);
+      const hour = timePoint.getHours();
+      
+      // Generate realistic time-of-day multiplier
+      const multiplier = this._getTimeOfDayMultiplier(hour);
+      
       points.push({
         timeLabel: timePoint.toISOString(),
-        stripeValue: Math.floor(Math.random() * 4500 + 900),
-        bluefinValue: Math.floor(Math.random() * 3800 + 1000),
-        worldpay_integratedValue: Math.floor(Math.random() * 4200 + 1200),
-        gravityValue: Math.floor(Math.random() * 3500 + 800),
-        covetrusValue: Math.floor(Math.random() * 3000 + 700)
+        stripeValue: Math.floor((Math.random() * 4500 + 900) * multiplier),
+        bluefinValue: Math.floor((Math.random() * 3800 + 1000) * multiplier),
+        worldpay_integratedValue: Math.floor((Math.random() * 4200 + 1200) * multiplier),
+        gravityValue: Math.floor((Math.random() * 3500 + 800) * multiplier),
+        covetrusValue: Math.floor((Math.random() * 3000 + 700) * multiplier)
       });
     }
     return points;
+  }
+
+  /**
+   * Returns a multiplier based on hour of day to simulate realistic transaction patterns
+   * @param {number} hour - Hour of the day (0-23)
+   * @returns {number} - Multiplier value (0-1)
+   */
+  _getTimeOfDayMultiplier(hour) {
+    // Overnight (midnight-6am): Low activity ~20-30%
+    if (hour >= 0 && hour < 6) {
+      return 0.2 + Math.random() * 0.1;
+    }
+    
+    // Morning ramp-up (6am-10am): Gradual increase
+    if (hour >= 6 && hour < 10) {
+      // Linear increase from 0.3 to 1.0
+      const progress = (hour - 6) / 4; // 0 to 1 over 4 hours
+      return 0.3 + (progress * 0.7) + (Math.random() * 0.1 - 0.05);
+    }
+    
+    // Business hours (10am-6pm): Peak activity ~90-100%
+    if (hour >= 10 && hour < 18) {
+      return 0.9 + Math.random() * 0.1;
+    }
+    
+    // Evening decline (6pm-midnight): Gradual decrease
+    if (hour >= 18 && hour < 24) {
+      // Linear decrease from 0.9 to 0.3
+      const progress = (hour - 18) / 6; // 0 to 1 over 6 hours
+      return 0.9 - (progress * 0.6) + (Math.random() * 0.1 - 0.05);
+    }
+    
+    // Default fallback
+    return 1.0;
   }
 
   /**
