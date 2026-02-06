@@ -11,10 +11,11 @@ class HttpInterface {
 
   _setupMiddleware() {
     this.expressApp.use(cors());
-    // Note: express.json() is applied globally, but specific routes can override with express.raw()
+    // Note: Webhook routes use express.raw() for proper signature verification
+    // express.json() is conditionally applied to non-webhook routes
     this.expressApp.use((req, res, next) => {
-      // Skip JSON parsing for Stripe webhook to allow raw body access
-      if (req.path === '/webhooks/stripe') {
+      // Skip JSON parsing for webhook endpoints to allow raw body access
+      if (req.path.startsWith('/webhooks/')) {
         next();
       } else {
         express.json()(req, res, next);
@@ -42,7 +43,10 @@ class HttpInterface {
   _setupWebhookRoutes() {
     const webhookHandler = this.engine.getWebhookHandler();
 
-    // Stripe webhook endpoint - needs to be before express.json() parses the body
+    // All webhook endpoints need raw body for signature verification
+    // They are defined before the global express.json() middleware is applied to them
+    
+    // Stripe webhook endpoint
     this.expressApp.post('/webhooks/stripe', express.raw({ type: 'application/json' }), (req, res) => {
       try {
         const signature = req.headers['stripe-signature'];
@@ -64,10 +68,11 @@ class HttpInterface {
     });
 
     // Bluefin webhook endpoint
-    this.expressApp.post('/webhooks/bluefin', (req, res) => {
+    this.expressApp.post('/webhooks/bluefin', express.raw({ type: 'application/json' }), (req, res) => {
       try {
         const signature = req.headers['x-bluefin-signature'];
-        const payload = JSON.stringify(req.body);
+        // Get raw payload for signature verification
+        const payload = req.body.toString();
         
         const transaction = webhookHandler.processBluefinWebhook(payload, signature);
         
@@ -80,10 +85,11 @@ class HttpInterface {
     });
 
     // WorldPay Integrated webhook endpoint
-    this.expressApp.post('/webhooks/worldpay', (req, res) => {
+    this.expressApp.post('/webhooks/worldpay', express.raw({ type: 'application/json' }), (req, res) => {
       try {
         const signature = req.headers['x-worldpay-signature'];
-        const payload = JSON.stringify(req.body);
+        // Get raw payload for signature verification
+        const payload = req.body.toString();
         
         const transaction = webhookHandler.processWorldPayWebhook(payload, signature);
         
@@ -96,10 +102,11 @@ class HttpInterface {
     });
 
     // Gravity webhook endpoint
-    this.expressApp.post('/webhooks/gravity', (req, res) => {
+    this.expressApp.post('/webhooks/gravity', express.raw({ type: 'application/json' }), (req, res) => {
       try {
         const signature = req.headers['x-gravity-signature'];
-        const payload = JSON.stringify(req.body);
+        // Get raw payload for signature verification
+        const payload = req.body.toString();
         
         const transaction = webhookHandler.processGravityWebhook(payload, signature);
         
@@ -112,10 +119,11 @@ class HttpInterface {
     });
 
     // Covetrus Payment Processing webhook endpoint
-    this.expressApp.post('/webhooks/covetrus', (req, res) => {
+    this.expressApp.post('/webhooks/covetrus', express.raw({ type: 'application/json' }), (req, res) => {
       try {
         const signature = req.headers['x-covetrus-signature'];
-        const payload = JSON.stringify(req.body);
+        // Get raw payload for signature verification
+        const payload = req.body.toString();
         
         const transaction = webhookHandler.processCovetrusWebhook(payload, signature);
         

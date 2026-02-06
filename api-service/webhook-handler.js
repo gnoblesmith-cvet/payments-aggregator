@@ -128,11 +128,38 @@ class WebhookHandler {
       return true; // Allow in development/testing
     }
 
+    if (!signature) {
+      console.error('Missing Stripe signature header');
+      return false;
+    }
+
     try {
-      // Stripe uses HMAC SHA256 with timestamp
-      const stripe = require('stripe');
-      // This is a simplified verification - in production, use stripe.webhooks.constructEvent
-      return true; // Placeholder for actual Stripe verification
+      // For production use, implement proper Stripe webhook verification
+      // using stripe.webhooks.constructEvent with the webhook secret
+      // For now, use basic HMAC verification similar to other processors
+      const expectedSignature = crypto
+        .createHmac('sha256', secret)
+        .update(payload)
+        .digest('hex');
+      
+      // Stripe uses a more complex signature format (t=timestamp,v1=signature)
+      // This is a simplified version - in production, parse the signature properly
+      const signatureParts = signature.split(',');
+      const v1Signature = signatureParts.find(part => part.startsWith('v1='));
+      
+      if (v1Signature) {
+        const providedSig = v1Signature.substring(3);
+        return crypto.timingSafeEqual(
+          Buffer.from(providedSig),
+          Buffer.from(expectedSignature)
+        );
+      }
+      
+      // Fallback for simple signature format in testing
+      return crypto.timingSafeEqual(
+        Buffer.from(signature),
+        Buffer.from(expectedSignature)
+      );
     } catch (error) {
       console.error('Stripe signature verification error:', error.message);
       return false;
@@ -295,7 +322,8 @@ class WebhookHandler {
         statusLower.includes('approved') || 
         statusLower.includes('completed') ||
         statusLower.includes('paid') ||
-        statusLower === 'authorised') {
+        statusLower === 'authorised' ||
+        statusLower === 'authorized') {
       return 'success';
     }
     
