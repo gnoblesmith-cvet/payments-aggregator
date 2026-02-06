@@ -1,0 +1,16 @@
+{
+  "name": "webhook-mocker",
+  "version": "1.0.0",
+  "description": "Mock webhook service for testing payment processor integrations",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "axios": "^1.6.0"
+  }
+}

@@ -6,6 +6,7 @@ A real-time payment aggregator application that displays and compares data from 
 
 - **API Service** (`api-service/`): Node.js backend with Express and WebSocket support
 - **UI Layer** (`ui-layer/`): React frontend with real-time visualization
+- **Webhook Mocker** (`webhook-mocker/`): Mock webhook service for local development and testing
 
 ## Supported Payment Processors
 
@@ -128,7 +129,32 @@ For each payment processor, you'll need to configure webhook URLs in their respe
 
 ### Testing Webhooks Locally
 
-For local development, use a tool like ngrok to expose your local server:
+#### Option 1: Using the Webhook Mocker (Recommended for Local Development)
+
+For quick local testing without external dependencies, use the included webhook mocker service:
+
+```bash
+# Terminal 1: Start the API service
+cd api-service
+npm install
+npm start
+
+# Terminal 2: Start the UI layer
+cd ui-layer
+npm install
+npm run dev
+
+# Terminal 3: Start the webhook mocker
+cd webhook-mocker
+npm install
+npm start
+```
+
+The webhook mocker will automatically send mock webhooks for all five payment processors to your local API service. Open http://localhost:3000 to see live mock transactions.
+
+#### Option 2: Using Real Payment Processor Webhooks
+
+For testing with actual payment processor webhooks, use a tool like ngrok to expose your local server:
 
 ```bash
 # In one terminal, start the API service
