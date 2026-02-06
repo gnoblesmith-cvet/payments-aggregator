@@ -25,7 +25,7 @@ class WebhookMocker {
     };
     
     // Interval between mock webhook sends (in milliseconds)
-    this.sendIntervalMs = parseInt(process.env.WEBHOOK_INTERVAL_MS) || 3000; // Default: 3 seconds
+    this.sendIntervalMs = parseInt(process.env.WEBHOOK_INTERVAL_MS, 10) || 3000; // Default: 3 seconds
     
     // Counter for generating unique transaction IDs
     this.txCounter = 1;
@@ -195,9 +195,10 @@ class WebhookMocker {
     const statuses = ['AUTHORISED', 'AUTHORIZED', 'SUCCESS', 'DECLINED', 'CANCELLED', 'PENDING'];
     const status = statuses[Math.floor(Math.random() * statuses.length)];
     
+    const txId = this.txCounter++;
     const payload = {
-      orderCode: `WP_${this.txCounter++}`,
-      transactionId: `wp_tx_${this.txCounter}`,
+      orderCode: `WP_${txId}`,
+      transactionId: `wp_tx_${txId}`,
       amount: Math.floor(Math.random() * 50000) + 1000, // Amount in cents
       currencyCode: 'USD',
       paymentStatus: status,
@@ -229,11 +230,13 @@ class WebhookMocker {
     const statuses = ['success', 'completed', 'approved', 'declined', 'failed', 'processing'];
     const status = statuses[Math.floor(Math.random() * statuses.length)];
     
+    const txId = this.txCounter++;
+    const amount = (Math.random() * 490 + 10).toFixed(2);
     const payload = {
-      transaction_id: `grav_${this.txCounter++}`,
-      id: `grav_id_${this.txCounter}`,
-      total: (Math.random() * 490 + 10).toFixed(2),
-      amount: (Math.random() * 490 + 10).toFixed(2),
+      transaction_id: `grav_${txId}`,
+      id: `grav_id_${txId}`,
+      total: amount,
+      amount: amount,
       currency: 'USD',
       payment_status: status,
       status: status,
@@ -266,12 +269,14 @@ class WebhookMocker {
     const statuses = ['success', 'completed', 'approved', 'declined', 'rejected', 'processing'];
     const status = statuses[Math.floor(Math.random() * statuses.length)];
     
+    const txId = this.txCounter++;
+    const amount = (Math.random() * 490 + 10).toFixed(2);
     const payload = {
-      paymentId: `cov_${this.txCounter++}`,
-      transactionId: `cov_tx_${this.txCounter}`,
-      id: `cov_id_${this.txCounter}`,
-      paymentAmount: (Math.random() * 490 + 10).toFixed(2),
-      amount: (Math.random() * 490 + 10).toFixed(2),
+      paymentId: `cov_${txId}`,
+      transactionId: `cov_tx_${txId}`,
+      id: `cov_id_${txId}`,
+      paymentAmount: amount,
+      amount: amount,
       currency: 'USD',
       paymentStatus: status,
       status: status,
