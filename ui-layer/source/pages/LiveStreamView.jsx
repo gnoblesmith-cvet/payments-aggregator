@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 const WS_ENDPOINT = 'ws://localhost:3001';
 const STORAGE_KEY = 'payment_transactions';
 const PAGE_SIZE = 25;
+const MAX_STORED_TRANSACTIONS = 100;
 
 function LiveStreamView() {
   const [transactions, setTransactions] = useState([]);
@@ -32,7 +33,7 @@ function LiveStreamView() {
         console.error('Failed to save transactions to localStorage:', error);
         // If quota exceeded, keep only recent transactions
         if (error.name === 'QuotaExceededError') {
-          const reducedTransactions = transactions.slice(0, 100);
+          const reducedTransactions = transactions.slice(0, MAX_STORED_TRANSACTIONS);
           try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(reducedTransactions));
             setTransactions(reducedTransactions);
@@ -64,11 +65,14 @@ function LiveStreamView() {
     socket.onmessage = (event) => {
       const txData = JSON.parse(event.data);
       setTransactions(prev => {
-        const newTransactions = [txData, ...prev];
-        // Reset to first page when new transaction arrives
-        setCurrentPage(1);
-        return newTransactions;
+        // Check if transaction already exists to avoid duplicates
+        const exists = prev.some(tx => tx.txId === txData.txId);
+        if (exists) {
+          return prev;
+        }
+        return [txData, ...prev];
       });
+      setCurrentPage(1); // Reset to first page when new transaction arrives
     };
     
     socket.onerror = (error) => {
