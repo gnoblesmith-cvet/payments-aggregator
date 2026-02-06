@@ -124,7 +124,8 @@ class WebhookHandler {
   _verifyStripeSignature(payload, signature) {
     const secret = this.webhookSecrets.stripe;
     if (!secret) {
-      console.warn('⚠️  STRIPE_WEBHOOK_SECRET not configured - skipping signature verification');
+      console.error('⚠️  CRITICAL: STRIPE_WEBHOOK_SECRET not configured - webhook signature verification disabled!');
+      console.error('   This is a security risk. Set STRIPE_WEBHOOK_SECRET environment variable for production.');
       return true; // Allow in development/testing
     }
 
@@ -171,7 +172,8 @@ class WebhookHandler {
    */
   _verifyGenericSignature(payload, signature, secret) {
     if (!secret) {
-      console.warn('⚠️  Webhook secret not configured - skipping signature verification');
+      console.error('⚠️  CRITICAL: Webhook secret not configured - signature verification disabled!');
+      console.error('   This is a security risk. Configure webhook secrets for production use.');
       return true; // Allow in development/testing
     }
 

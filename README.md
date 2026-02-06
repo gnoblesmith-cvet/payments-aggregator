@@ -44,11 +44,13 @@ The API service supports the following environment variables for webhook signatu
 
 - `STRIPE_WEBHOOK_SECRET` (optional): Your Stripe webhook signing secret for signature verification
   - Format: `whsec_...`
-  - If not set, signature verification will be skipped (not recommended for production)
+  - **IMPORTANT**: If not set, signature verification will be skipped (not recommended for production)
 - `BLUEFIN_WEBHOOK_SECRET` (optional): Your Bluefin webhook secret
 - `WORLDPAY_WEBHOOK_SECRET` (optional): Your WorldPay Integrated webhook secret
 - `GRAVITY_WEBHOOK_SECRET` (optional): Your Gravity webhook secret
 - `COVETRUS_WEBHOOK_SECRET` (optional): Your Covetrus Payment Processing webhook secret
+
+**Security Note**: For production deployments, always configure webhook secrets. Without them, the application will accept unsigned webhooks, which is a security risk.
 
 Example with environment variables:
 ```bash

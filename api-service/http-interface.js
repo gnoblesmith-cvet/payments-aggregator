@@ -11,14 +11,18 @@ class HttpInterface {
 
   _setupMiddleware() {
     this.expressApp.use(cors());
-    // Note: Webhook routes use express.raw() for proper signature verification
-    // express.json() is conditionally applied to non-webhook routes
+    
+    // Define JSON parser once for efficiency
+    const jsonParser = express.json();
+    
+    // Webhook routes use express.raw() for proper signature verification
+    // All other routes use express.json()
     this.expressApp.use((req, res, next) => {
       // Skip JSON parsing for webhook endpoints to allow raw body access
       if (req.path.startsWith('/webhooks/')) {
         next();
       } else {
-        express.json()(req, res, next);
+        jsonParser(req, res, next);
       }
     });
   }
