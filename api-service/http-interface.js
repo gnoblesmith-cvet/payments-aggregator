@@ -11,7 +11,20 @@ class HttpInterface {
 
   _setupMiddleware() {
     this.expressApp.use(cors());
-    this.expressApp.use(express.json());
+    
+    // Define JSON parser once for efficiency
+    const jsonParser = express.json();
+    
+    // Webhook routes use express.raw() for proper signature verification
+    // All other routes use express.json()
+    this.expressApp.use((req, res, next) => {
+      // Skip JSON parsing for webhook endpoints to allow raw body access
+      if (req.path.startsWith('/webhooks/')) {
+        next();
+      } else {
+        jsonParser(req, res, next);
+      }
+    });
   }
 
   _setupRoutes() {
@@ -27,24 +40,106 @@ class HttpInterface {
       });
     });
 
-    // Stripe-specific endpoints for cached data
-    this.expressApp.get('/stripe/payment-links', (req, res) => {
-      const stripePoller = this.engine.getStripePoller();
-      const paymentLinks = stripePoller.getPaymentLinks();
-      res.json({
-        count: paymentLinks.length,
-        data: paymentLinks
-      });
+    // Webhook endpoints for all five payment processors
+    this._setupWebhookRoutes();
+  }
+
+  _setupWebhookRoutes() {
+    const webhookHandler = this.engine.getWebhookHandler();
+
+    // All webhook endpoints need raw body for signature verification
+    // They are defined before the global express.json() middleware is applied to them
+    
+    // Stripe webhook endpoint
+    this.expressApp.post('/webhooks/stripe', express.raw({ type: 'application/json' }), (req, res) => {
+      try {
+        const signature = req.headers['stripe-signature'];
+        // req.body is a Buffer when using express.raw()
+        const payload = req.body.toString();
+        
+        const transaction = webhookHandler.processStripeWebhook(payload, signature);
+        
+        if (transaction) {
+          console.log(`✓ Processed Stripe webhook: ${transaction.txId}`);
+          res.json({ received: true, transactionId: transaction.txId });
+        } else {
+          res.json({ received: true, message: 'Event type not tracked' });
+        }
+      } catch (error) {
+        console.error('Error processing Stripe webhook:', error.message);
+        res.status(400).json({ error: error.message });
+      }
     });
 
-    this.expressApp.get('/stripe/transactions', (req, res) => {
-      const stripePoller = this.engine.getStripePoller();
-      const transactions = stripePoller.getTransactions();
-      res.json({
-        count: transactions.length,
-        data: transactions
-      });
+    // Bluefin webhook endpoint
+    this.expressApp.post('/webhooks/bluefin', express.raw({ type: 'application/json' }), (req, res) => {
+      try {
+        const signature = req.headers['x-bluefin-signature'];
+        // Get raw payload for signature verification
+        const payload = req.body.toString();
+        
+        const transaction = webhookHandler.processBluefinWebhook(payload, signature);
+        
+        console.log(`✓ Processed Bluefin webhook: ${transaction.txId}`);
+        res.json({ received: true, transactionId: transaction.txId });
+      } catch (error) {
+        console.error('Error processing Bluefin webhook:', error.message);
+        res.status(400).json({ error: error.message });
+      }
     });
+
+    // WorldPay Integrated webhook endpoint
+    this.expressApp.post('/webhooks/worldpay', express.raw({ type: 'application/json' }), (req, res) => {
+      try {
+        const signature = req.headers['x-worldpay-signature'];
+        // Get raw payload for signature verification
+        const payload = req.body.toString();
+        
+        const transaction = webhookHandler.processWorldPayWebhook(payload, signature);
+        
+        console.log(`✓ Processed WorldPay webhook: ${transaction.txId}`);
+        res.json({ received: true, transactionId: transaction.txId });
+      } catch (error) {
+        console.error('Error processing WorldPay webhook:', error.message);
+        res.status(400).json({ error: error.message });
+      }
+    });
+
+    // Gravity webhook endpoint
+    this.expressApp.post('/webhooks/gravity', express.raw({ type: 'application/json' }), (req, res) => {
+      try {
+        const signature = req.headers['x-gravity-signature'];
+        // Get raw payload for signature verification
+        const payload = req.body.toString();
+        
+        const transaction = webhookHandler.processGravityWebhook(payload, signature);
+        
+        console.log(`✓ Processed Gravity webhook: ${transaction.txId}`);
+        res.json({ received: true, transactionId: transaction.txId });
+      } catch (error) {
+        console.error('Error processing Gravity webhook:', error.message);
+        res.status(400).json({ error: error.message });
+      }
+    });
+
+    // Covetrus Payment Processing webhook endpoint
+    this.expressApp.post('/webhooks/covetrus', express.raw({ type: 'application/json' }), (req, res) => {
+      try {
+        const signature = req.headers['x-covetrus-signature'];
+        // Get raw payload for signature verification
+        const payload = req.body.toString();
+        
+        const transaction = webhookHandler.processCovetrusWebhook(payload, signature);
+        
+        console.log(`✓ Processed Covetrus webhook: ${transaction.txId}`);
+        res.json({ received: true, transactionId: transaction.txId });
+      } catch (error) {
+        console.error('Error processing Covetrus webhook:', error.message);
+        res.status(400).json({ error: error.message });
+      }
+    });
+
+    console.log('✓ Webhook routes configured for all payment processors');
   }
 
   activate(portNum) {

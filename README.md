@@ -1,50 +1,65 @@
 # payments-aggregator
 
-A real-time payment aggregator application that displays and compares data from multiple payment processors (Worldpay and Stripe).
+A real-time payment aggregator application that displays and compares data from multiple payment processors via webhooks.
 
 ## Architecture
 
 - **API Service** (`api-service/`): Node.js backend with Express and WebSocket support
 - **UI Layer** (`ui-layer/`): React frontend with real-time visualization
 
+## Supported Payment Processors
+
+The application now supports **five payment processors** via webhook integration:
+1. **Stripe**
+2. **Bluefin**
+3. **WorldPay Integrated**
+4. **Gravity**
+5. **Covetrus Payment Processing**
+
 ## Features
 
-1. **Charts & Comparison Page**: Visual analytics comparing Worldpay and Stripe
+1. **Charts & Comparison Page**: Visual analytics comparing all payment processors
    - Transaction volume metrics
    - Revenue tracking
    - 24-hour trend analysis
    - Success vs declined rate comparison
 
 2. **Live Transaction Feed**: Real-time stream of payments via WebSocket
-   - Live transaction updates from Worldpay (simulated) and Stripe (real API)
+   - Live transaction updates from all five payment processors
    - Connection status indicator
    - Processor identification
    - Transaction status tracking (success, processing, declined)
 
-3. **Stripe Integration**: Real-time polling of Stripe API
-   - Fetches Payment Links and Charges
-   - Includes failed charges
-   - In-memory caching with configurable polling interval
+3. **Webhook Integration**: Real-time payment data from all processors
+   - Secure webhook endpoints for each payment processor
+   - Signature verification for security
    - Live WebSocket broadcast of new transactions
+   - Support for multiple transaction event types
 
 ## Running the Application
 
 ### Environment Variables
 
-The API service supports the following environment variables:
+The API service supports the following environment variables for webhook signature verification:
 
-- `STRIPE_SECRET_KEY` (optional): Your Stripe secret API key for live Stripe integration
-  - If not set, Stripe polling will be disabled and the app will log a warning
-  - Format: `sk_test_...` (test mode) or `sk_live_...` (live mode)
-- `STRIPE_POLL_INTERVAL_MS` (optional): Polling interval for Stripe API in milliseconds
-  - Default: `30000` (30 seconds)
-  - Minimum recommended: `10000` (10 seconds)
+- `STRIPE_WEBHOOK_SECRET` (optional): Your Stripe webhook signing secret for signature verification
+  - Format: `whsec_...`
+  - **IMPORTANT**: If not set, signature verification will be skipped (not recommended for production)
+- `BLUEFIN_WEBHOOK_SECRET` (optional): Your Bluefin webhook secret
+- `WORLDPAY_WEBHOOK_SECRET` (optional): Your WorldPay Integrated webhook secret
+- `GRAVITY_WEBHOOK_SECRET` (optional): Your Gravity webhook secret
+- `COVETRUS_WEBHOOK_SECRET` (optional): Your Covetrus Payment Processing webhook secret
+
+**Security Note**: For production deployments, always configure webhook secrets. Without them, the application will accept unsigned webhooks, which is a security risk.
 
 Example with environment variables:
 ```bash
 cd api-service
-export STRIPE_SECRET_KEY=sk_test_your_key_here
-export STRIPE_POLL_INTERVAL_MS=30000
+export STRIPE_WEBHOOK_SECRET=whsec_your_secret_here
+export BLUEFIN_WEBHOOK_SECRET=your_bluefin_secret
+export WORLDPAY_WEBHOOK_SECRET=your_worldpay_secret
+export GRAVITY_WEBHOOK_SECRET=your_gravity_secret
+export COVETRUS_WEBHOOK_SECRET=your_covetrus_secret
 npm install
 npm start
 ```
@@ -69,16 +84,67 @@ The UI will be available at `http://localhost:3000`
 
 ## API Endpoints
 
-- `GET /analytics/comparison` - Get aggregated payment statistics
+### Analytics & Status
+- `GET /analytics/comparison` - Get aggregated payment statistics for all processors
 - `GET /system/status` - Check system health
-- `GET /stripe/payment-links` - Get cached list of Stripe Payment Links
-- `GET /stripe/transactions` - Get cached list of Stripe transactions (includes failed charges)
-- `WebSocket ws://localhost:3001` - Live payment feed
+
+### Webhook Endpoints
+Configure these URLs in your payment processor dashboards:
+- `POST /webhooks/stripe` - Stripe webhook endpoint
+- `POST /webhooks/bluefin` - Bluefin webhook endpoint
+- `POST /webhooks/worldpay` - WorldPay Integrated webhook endpoint
+- `POST /webhooks/gravity` - Gravity webhook endpoint
+- `POST /webhooks/covetrus` - Covetrus Payment Processing webhook endpoint
+
+### WebSocket
+- `WebSocket ws://localhost:3001` - Live payment feed for all processors
+
+## Webhook Configuration
+
+### Setting Up Webhooks
+
+For each payment processor, you'll need to configure webhook URLs in their respective dashboards:
+
+1. **Stripe**: 
+   - Go to Developers > Webhooks in your Stripe Dashboard
+   - Add endpoint: `https://your-domain.com/webhooks/stripe`
+   - Select events: `charge.succeeded`, `charge.failed`, `charge.pending`, `payment_intent.succeeded`, `payment_intent.payment_failed`
+
+2. **Bluefin**:
+   - Configure webhook URL: `https://your-domain.com/webhooks/bluefin`
+   - Include signature header: `X-Bluefin-Signature`
+
+3. **WorldPay Integrated**:
+   - Configure webhook URL: `https://your-domain.com/webhooks/worldpay`
+   - Include signature header: `X-Worldpay-Signature`
+
+4. **Gravity**:
+   - Configure webhook URL: `https://your-domain.com/webhooks/gravity`
+   - Include signature header: `X-Gravity-Signature`
+
+5. **Covetrus Payment Processing**:
+   - Configure webhook URL: `https://your-domain.com/webhooks/covetrus`
+   - Include signature header: `X-Covetrus-Signature`
+
+### Testing Webhooks Locally
+
+For local development, use a tool like ngrok to expose your local server:
+
+```bash
+# In one terminal, start the API service
+cd api-service
+npm start
+
+# In another terminal, start ngrok
+ngrok http 3001
+```
+
+Then use the ngrok URL (e.g., `https://abc123.ngrok.io/webhooks/stripe`) in your payment processor webhook configuration.
 
 ## Future Enhancements
 
-- Webhook integration for real-time Stripe events
-- Integration with actual Worldpay API
-- Splunk log analysis capability
-- Historical data persistence
+- Historical data persistence (database integration)
 - Advanced filtering and search
+- Webhook retry mechanism
+- Rate limiting for webhook endpoints
+- Analytics dashboard enhancements

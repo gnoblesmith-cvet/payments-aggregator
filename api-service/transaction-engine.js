@@ -1,17 +1,23 @@
-const StripePoller = require('./stripe-poller');
+const WebhookHandler = require('./webhook-handler');
 
 class TransactionEngine {
   constructor() {
-    this.dataStore = { worldpay: [], stripe: [] };
+    // Updated data store for all five payment processors
+    this.dataStore = {
+      stripe: [],
+      bluefin: [],
+      worldpay_integrated: [],
+      gravity: [],
+      covetrus: []
+    };
     this.listeners = [];
-    this.generatorTimer = null;
     
-    // Initialize Stripe poller for real API integration
-    this.stripePoller = new StripePoller();
+    // Initialize webhook handler for all payment processors
+    this.webhookHandler = new WebhookHandler();
     
-    // Forward Stripe transactions to our listeners
-    this.stripePoller.onNewTransaction((txData) => {
-      this.dataStore.stripe.push(txData);
+    // Forward all webhook transactions to our listeners
+    this.webhookHandler.onNewTransaction((txData) => {
+      this.dataStore[txData.processorName].push(txData);
       this.listeners.forEach(fn => fn(txData));
     });
   }
@@ -21,49 +27,18 @@ class TransactionEngine {
   }
 
   beginGenerating() {
-    // Start Stripe polling for real API integration
-    this.stripePoller.startPolling();
-    
-    // Continue generating simulated Worldpay transactions only
-    this.generatorTimer = setInterval(() => {
-      const tx = this._fabricateTransaction();
-      this.dataStore[tx.processorName].push(tx);
-      this.listeners.forEach(fn => fn(tx));
-    }, 1800 + Math.random() * 2400);
+    // Webhook-based architecture - no need to poll or generate simulated data
+    // Transactions will arrive via webhook endpoints
+    console.log('TransactionEngine ready - awaiting webhook events from payment processors');
   }
 
-  _fabricateTransaction() {
-    // Only generate Worldpay transactions now (Stripe uses real API)
-    const chosenProcessor = 'worldpay';
-    const moneyValue = (Math.random() * 880 + 70).toFixed(2);
-    const outcomes = ['success', 'processing', 'declined'];
-    const outcomeProbs = [0.82, 0.12, 0.06];
-    
-    let finalOutcome;
-    const roll = Math.random();
-    if (roll < outcomeProbs[0]) {
-      finalOutcome = outcomes[0];
-    } else if (roll < outcomeProbs[0] + outcomeProbs[1]) {
-      finalOutcome = outcomes[1];
-    } else {
-      finalOutcome = outcomes[2];
-    }
 
-    return {
-      txId: `TX${Date.now()}${Math.random().toString(36).slice(2, 11).toUpperCase()}`,
-      processorName: chosenProcessor,
-      moneyAmount: parseFloat(moneyValue),
-      currencyType: ['USD', 'EUR', 'GBP'][Math.floor(Math.random() * 3)],
-      outcome: finalOutcome,
-      occurredAt: new Date().toISOString(),
-      vendorCode: `V${Math.floor(Math.random() * 899 + 100)}`
-    };
-  }
 
   computeStatistics() {
     const metrics = {};
     
-    ['worldpay', 'stripe'].forEach(proc => {
+    // Compute metrics for all five payment processors
+    ['stripe', 'bluefin', 'worldpay_integrated', 'gravity', 'covetrus'].forEach(proc => {
       const txList = this.dataStore[proc];
       const successTxs = txList.filter(t => t.outcome === 'success');
       
@@ -88,18 +63,21 @@ class TransactionEngine {
       timePoint.setHours(timePoint.getHours() - i);
       points.push({
         timeLabel: timePoint.toISOString(),
-        worldpayValue: Math.floor(Math.random() * 4200 + 1200),
-        stripeValue: Math.floor(Math.random() * 4500 + 900)
+        stripeValue: Math.floor(Math.random() * 4500 + 900),
+        bluefinValue: Math.floor(Math.random() * 3800 + 1000),
+        worldpay_integratedValue: Math.floor(Math.random() * 4200 + 1200),
+        gravityValue: Math.floor(Math.random() * 3500 + 800),
+        covetrusValue: Math.floor(Math.random() * 3000 + 700)
       });
     }
     return points;
   }
 
   /**
-   * Get the StripePoller instance for direct access to Stripe data
+   * Get the WebhookHandler instance for direct access to webhook processing
    */
-  getStripePoller() {
-    return this.stripePoller;
+  getWebhookHandler() {
+    return this.webhookHandler;
   }
 }
 
