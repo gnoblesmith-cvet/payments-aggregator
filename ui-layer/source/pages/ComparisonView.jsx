@@ -37,13 +37,13 @@ function ComparisonView() {
       <div className="metrics-grid">
         <div className="metric-card">
           <div className="metric-title">Worldpay Transactions</div>
-          <div className="metric-value">{metricsData.worldpay.volumeTotal}</div>
+          <div className="metric-value">{metricsData.worldpay_integrated.volumeTotal}</div>
           <div className="metric-label">Total Volume</div>
         </div>
         
         <div className="metric-card">
           <div className="metric-title">Worldpay Revenue</div>
-          <div className="metric-value">${metricsData.worldpay.revenueSum.toFixed(2)}</div>
+          <div className="metric-value">${metricsData.worldpay_integrated.revenueSum.toFixed(2)}</div>
           <div className="metric-label">Successful Payments</div>
         </div>
         
@@ -77,7 +77,7 @@ function ComparisonView() {
             <Legend />
             <Line 
               type="monotone" 
-              dataKey="worldpayValue" 
+              dataKey="worldpay_integratedValue" 
               stroke="#f39c12" 
               strokeWidth={3}
               name="Worldpay"
@@ -101,8 +101,8 @@ function ComparisonView() {
           <BarChart data={[
             {
               name: 'Worldpay',
-              Successful: metricsData.worldpay.successCount,
-              Declined: metricsData.worldpay.declinedCount
+              Successful: metricsData.worldpay_integrated.successCount,
+              Declined: metricsData.worldpay_integrated.declinedCount
             },
             {
               name: 'Stripe',
