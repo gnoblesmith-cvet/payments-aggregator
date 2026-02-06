@@ -75,7 +75,55 @@ class TransactionEngine {
         covetrusValue: Math.floor((Math.random() * 3000 + 700) * multiplier)
       });
     }
-    return points;
+    
+    // Reorder the points so that noon (12:00) is in the center of the plot
+    // This creates a view centered on the middle of the day instead of midnight
+    const reorderedPoints = this._centerOnNoon(points);
+    return reorderedPoints;
+  }
+
+  /**
+   * Reorders time series data to center noon (12:00) in the middle of the plot
+   * @param {Array} points - Array of time series data points
+   * @returns {Array} - Reordered array with noon centered
+   */
+  _centerOnNoon(points) {
+    if (points.length !== 24) {
+      return points; // Only works with 24-hour data
+    }
+    
+    const CHART_CENTER_INDEX = 12; // Desired center position for noon in the chart
+    const NOON_HOUR = 12; // Target hour to center (noon)
+    
+    // Find the index where hour is closest to noon (12)
+    let noonIndex = -1;
+    let minDiff = 24;
+    
+    for (let i = 0; i < points.length; i++) {
+      const hour = new Date(points[i].timeLabel).getUTCHours();
+      const diff = Math.abs(hour - NOON_HOUR);
+      if (diff < minDiff) {
+        minDiff = diff;
+        noonIndex = i;
+      }
+    }
+    
+    // If noon wasn't found (shouldn't happen with valid data), return original array
+    if (noonIndex === -1) {
+      return points;
+    }
+    
+    // Calculate the offset needed to center noon at the desired index
+    const offset = noonIndex - CHART_CENTER_INDEX;
+    
+    // Reorder the array by rotating it
+    const reordered = [];
+    for (let i = 0; i < points.length; i++) {
+      const sourceIndex = (i + offset + points.length) % points.length;
+      reordered.push(points[sourceIndex]);
+    }
+    
+    return reordered;
   }
 
   /**
