@@ -92,22 +92,29 @@ class TransactionEngine {
       return points; // Only works with 24-hour data
     }
     
+    const CHART_CENTER_INDEX = 12; // Desired center position for noon in the chart
+    const NOON_HOUR = 12; // Target hour to center (noon)
+    
     // Find the index where hour is closest to noon (12)
     let noonIndex = -1;
     let minDiff = 24;
     
     for (let i = 0; i < points.length; i++) {
-      const hour = new Date(points[i].timeLabel).getHours();
-      const diff = Math.abs(hour - 12);
+      const hour = new Date(points[i].timeLabel).getUTCHours();
+      const diff = Math.abs(hour - NOON_HOUR);
       if (diff < minDiff) {
         minDiff = diff;
         noonIndex = i;
       }
     }
     
-    // Calculate the offset needed to center noon (should be at index 12)
-    const centerIndex = 12;
-    const offset = noonIndex - centerIndex;
+    // If noon wasn't found (shouldn't happen with valid data), return original array
+    if (noonIndex === -1) {
+      return points;
+    }
+    
+    // Calculate the offset needed to center noon at the desired index
+    const offset = noonIndex - CHART_CENTER_INDEX;
     
     // Reorder the array by rotating it
     const reordered = [];
