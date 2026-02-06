@@ -1,6 +1,14 @@
 const Stripe = require('stripe');
 
 /**
+ * DEPRECATED: This file is no longer used in the webhook-based architecture.
+ * The application now receives payment data via webhooks instead of polling.
+ * See webhook-handler.js for the new implementation.
+ * 
+ * This file is kept for historical reference only.
+ */
+
+/**
  * StripePoller: Manages polling of Stripe API for Payment Links and Charges
  * Stores results in-memory and notifies listeners of new transactions
  */
